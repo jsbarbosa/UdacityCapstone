@@ -17,10 +17,10 @@ def read_aux_table(path: str, value: str) -> pd.DataFrame:
     return df
 
 
-def read_addr(path: str) -> pd.DataFrame:
+def read_states(path: str) -> pd.DataFrame:
     return read_aux_table(
         path,
-        'address'
+        'state'
     )
 
 

@@ -67,11 +67,16 @@ This data comes from the US Census Bureau's 2015 American Community Survey.
 # Configuration
 1. Go to [http://localhost:3000/admin/connection/](http://localhost:3000/admin/connection/)
 and click Create.
-2. 
+2. Add and AWS connetion
 - **Conn Id:** `aws`
 - **Conn Type:** `Amazon Web Services`
 - **Login:** `<ACCESS_KEY>`
 - **Password:** `<SECRET_ACCESS>`
+3 Add an Spark connetion
+- **Conn Id:** `spark`
+- **Conn Type:** `Spark`
+- **Host:** `spark://<EMR_USERNAME>`
+- **Port:** `7077`
 
-3. Add a variable called `raw_data` in airflow, pointing to the location of the 
+4. Add a variable called `raw_data` in airflow, pointing to the location of the 
 project data folder. It can be obtained by running: `echo "$PWD/data"`
