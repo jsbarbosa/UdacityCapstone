@@ -4,6 +4,7 @@
 *.pid
 *.cfg
 *.csv
+!data/*.csv
 
 airflow.cfg
 airflow.db
