@@ -28,11 +28,6 @@ class S3Operator(BaseOperator):
             aws_conn_id=self._s3_conn_id,
         ).get_credentials()
 
-        self.log.info(
-            aws.access_key,
-            aws.secret_key
-        )
-
         return boto3.resource(
             's3',
             aws_access_key_id=aws.access_key,

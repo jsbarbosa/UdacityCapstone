@@ -166,6 +166,7 @@ run_spark_checks = DataQualityOperator(
     tests={
         S3_IMMIGRATIONS: ['len(records) > 0'],
     },
+    folder=True,
     bucket=S3_BUCKET_NAME,
     s3_conn_id=AWS_CONN_ID,
     task_id='Run_spark_data_quality_checks',

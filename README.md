@@ -1,5 +1,27 @@
 # Udacity Capstone Project
 
+## ETL
+![DAG](DAG.png "DAG")
+1. Dimention tables are staged from local files in `data` at independent processes, initial data 
+   is stored with the columns: `code`, `value` as a key value pair. Tables are read and converted to the
+   following format: `id`, `uid`, `<col_name>`. 
+   - `id` build from entry position
+   - `uid` mapped from `code`
+   - `<col_name>` depends on the dimention table, but maps the `value` field
+    
+   Constructed dataframes are staged to S3 as parquet files
+
+2. A Data quality check is run to ensure that parquet files were uploaded, test calculates the size of the file
+
+3. Immigration data is read form source (currently local) column types are defined, 
+   and date related integers are changed to date format. Missing values for fact tables are completed using the
+   dataset documentation. All of this is run in Spark since is the data that might scale rapidly in time
+
+4. A final data quality check is run
+
+### Example Run
+![Gantt](Gantt.png "Gantt")
+
 ## Data
 ### [Immigration Data](https://travel.trade.gov/research/reports/i94/historical/2016.html)
 This data comes from the US National Tourism and Trade Office
@@ -8,9 +30,8 @@ This data comes from the US National Tourism and Trade Office
 This dataset contains information about the demographics of all US cities and census-designated places with a population greater or equal to 65,000. 
 
 This data comes from the US Census Bureau's 2015 American Community Survey.
-
-## Input Dictionary
-### Inmmigration data
+### Input Dictionary
+#### Inmmigration data
 - `I94YR`: 4 digit year
 - `I94MON`: Numeric month
 - `I94CIT`: This format shows all the valid and invalid codes for processing 
@@ -50,7 +71,7 @@ This data comes from the US Census Bureau's 2015 American Community Survey.
 - `FLTNO`: Flight number of Airline used to arrive in U.S.
 - `VISATYPE`: Class of admission legally admitting the non-immigrant to temporarily stay in U.S.
 
-## Demographics (`data/us-cities-demographics.csv`)
+### Demographics (`data/us-cities-demographics.csv`)
 - `City`: Corresponding city
 - `State`: Corresponding state
 - `Median Age`: Medium age of the population in the city/race
@@ -64,19 +85,24 @@ This data comes from the US Census Bureau's 2015 American Community Survey.
 - `Race`: Race
 - `Count`: 
 
-# Configuration
-1. Go to [http://localhost:3000/admin/connection/](http://localhost:3000/admin/connection/)
+## Configuration
+1. When running repo for the first time run `install.sh`, this will 
+   create a virtual environment with airflow and pyspark installed (it is assumed you have Spark installed and running)
+2. Start Airflow by running: `start.sh`
+3. Go to [http://localhost:3000/admin/connection/](http://localhost:3000/admin/connection/)
 and click Create.
-2. Add and AWS connetion
+4. Add and AWS connetion
 - **Conn Id:** `aws`
 - **Conn Type:** `Amazon Web Services`
 - **Login:** `<ACCESS_KEY>`
 - **Password:** `<SECRET_ACCESS>`
-3 Add an Spark connetion
+
+5 Add an Spark connetion
 - **Conn Id:** `spark`
 - **Conn Type:** `Spark`
-- **Host:** `spark://<EMR_USERNAME>`
+- **Host:** `spark://<SPARK_IP>`
 - **Port:** `7077`
 
-4. Add a variable called `raw_data` in airflow, pointing to the location of the 
+6. Add a variable called `raw_data` in airflow, pointing to the location of the 
 project data folder. It can be obtained by running: `echo "$PWD/data"`
+7. Create `dl.cfg` with the AWS credentials following `dl.cfg.example`
