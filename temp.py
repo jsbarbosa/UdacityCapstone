@@ -1,4 +1,3 @@
-import os
 import boto3
 import configparser
 
@@ -13,23 +12,8 @@ s3 = boto3.resource(
     'datalakebucketjsb'
 )
 
-files = [
-    os.path.join(
-        path, file
-    )
-    for path, __, files in os.walk('output/immigration.parquet')
-    for file in files
-]
+objects = s3.Object('udacity/capstone/states/states.parquet')
 
-for path in files:
-    name = os.path.join(
-        'udacity/capstone/immigration/',
-        path
-    ).replace('output/', '')
-    print(name)
-    with open(path, 'rb') as file:
-        s3.put_object(
-            Body=file.read(),
-            Key='test.crc'
-        )
-    break
+print(
+    objects.content_length
+)

@@ -164,7 +164,7 @@ spark_job = SparkSubmitOperator(
 
 run_spark_checks = DataQualityOperator(
     tests={
-        S3_IMMIGRATIONS: TESTS,
+        S3_IMMIGRATIONS: ['len(records) > 0'],
     },
     bucket=S3_BUCKET_NAME,
     s3_conn_id=AWS_CONN_ID,

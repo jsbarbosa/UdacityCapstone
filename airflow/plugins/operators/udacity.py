@@ -129,6 +129,7 @@ class DataQualityOperator(S3Operator):
             bucket: str,
             s3_conn_id: str,
             tests: dict,
+            folder: bool = False,
             *args,
             **kwargs
     ):
@@ -150,6 +151,7 @@ class DataQualityOperator(S3Operator):
         )
 
         self._tests = tests
+        self._folder = folder
 
     @property
     def tests(self) -> dict:
@@ -160,14 +162,25 @@ class DataQualityOperator(S3Operator):
         Method that verifies if the query was successful and if records exist
         in the table parameter
         """
-        try:
-            records = hook.Object(
-                table
-            )
-        except ClientError:
-            class Temp: pass
-            records = Temp()
-            records.content_length = 0
+        if not self._folder:
+            try:
+                records = hook.Object(
+                    table
+                )
+            except ClientError:
+                class Temp: pass
+                records = Temp()
+                records.content_length = 0
+        else:
+            try:
+                records = [
+                    item
+                    for item in hook.objects.filter(
+                        Prefix=table
+                    )
+                ]
+            except:
+                records = []
 
         for test in tests:
             if not eval(test):
