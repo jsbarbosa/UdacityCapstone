@@ -5,8 +5,8 @@ import configparser
 from pyspark.sql import SparkSession
 from pyspark.sql.functions import udf, monotonically_increasing_id
 
-ALLOW_READ: bool = True  #: read from local or S3
-ALLOW_WRITE: bool = True  #: write to S3
+ALLOW_READ: bool = False  #: read from local or S3
+ALLOW_WRITE: bool = False  #: write to S3
 S3_BUCKET: str = 's3://datalakebucketjsb/udacity/capstone'
 
 IMMIGRATION_QUERY: str = """

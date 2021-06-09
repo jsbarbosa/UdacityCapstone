@@ -1,11 +1,13 @@
 import os
-from botocore.exceptions import ClientError
+from io import BytesIO
 from typing import Callable
 
 import boto3
+import pandas as pd
 from airflow.contrib.hooks.aws_hook import AwsHook
 from airflow.models import BaseOperator, Variable
 from airflow.utils.decorators import apply_defaults
+from botocore.exceptions import ClientError
 
 
 class S3Operator(BaseOperator):
@@ -124,7 +126,6 @@ class DataQualityOperator(S3Operator):
             bucket: str,
             s3_conn_id: str,
             tests: dict,
-            folder: bool = False,
             *args,
             **kwargs
     ):
@@ -146,7 +147,6 @@ class DataQualityOperator(S3Operator):
         )
 
         self._tests = tests
-        self._folder = folder
 
     @property
     def tests(self) -> dict:
@@ -157,25 +157,16 @@ class DataQualityOperator(S3Operator):
         Method that verifies if the query was successful and if records exist
         in the table parameter
         """
-        if not self._folder:
-            try:
-                records = hook.Object(
-                    table
-                )
-            except ClientError:
-                class Temp: pass
-                records = Temp()
-                records.content_length = 0
-        else:
-            try:
-                records = [
-                    item
-                    for item in hook.objects.filter(
-                        Prefix=table
-                    )
-                ]
-            except:
-                records = []
+        try:
+            records = hook.Object(
+                table
+            )
+        except ClientError:
+            class Temp:
+                pass
+
+            records = Temp()
+            records.content_length = 0
 
         for test in tests:
             if not eval(test):
@@ -212,3 +203,97 @@ class DataQualityOperator(S3Operator):
             self.log.info(
                 f"Check for key '{table}' was successful"
             )
+
+
+class JobCheck(S3Operator):
+    """
+    S3 Operator that collects the previously generated parquet files and makes 
+    a join between a dimension table and the fact table.
+    """
+    @apply_defaults
+    def __init__(
+            self,
+            bucket: str,
+            s3_conn_id: str,
+            dimension_bucket: str,
+            fact_bucket: str,
+            dimension_id: str,
+            fact_id: str,
+            *args,
+            **kwargs
+    ):
+        """
+        
+        Parameters
+        ----------
+        bucket:
+            S3 bucket to read
+        s3_conn_id:
+            Airflow connection id
+        dimension_bucket:
+            path of the dimension table
+        fact_bucket:
+            path of the fact table
+        dimension_id:
+            column name of the dimension table id
+        fact_id:
+            column name of the fact table to join with dimension_id
+        args
+        kwargs
+        """
+        super(JobCheck, self).__init__(
+            bucket=bucket,
+            s3_conn_id=s3_conn_id,
+            *args,
+            **kwargs
+        )
+
+        self._dimension_bucket = dimension_bucket.replace(
+            self.bucket_name,
+            ''
+        )[1:]
+        self._fact_bucket = fact_bucket.replace(
+            self.bucket_name,
+            ''
+        )[1:]
+        self._dimension_id = dimension_id
+        self._fact_id = fact_id
+
+    def execute(self, context: dict):
+        hook = self.get_connection()
+
+        fact_keys = [
+            item.key for item in hook.objects.filter(
+                Prefix=self._fact_bucket
+            ) if item.key.endswith('.parquet')
+        ]
+
+        if fact_keys:
+            fact = pd.read_parquet(
+                BytesIO(
+                    hook.Object(
+                        fact_keys[0]
+                    ).get()['Body'].read()
+                )
+            )
+
+            dimension = pd.read_parquet(
+                BytesIO(
+                    hook.Object(
+                        self._dimension_bucket
+                    ).get()['Body'].read()
+                )
+            )
+
+            if dimension.merge(
+                fact,
+                left_on=self._dimension_id,
+                right_on=self._fact_id,
+                how='inner'
+            ).empty:
+                raise ValueError(
+                    "No values can be joined"
+                )
+
+        else:
+            raise ValueError("No fact data was found")

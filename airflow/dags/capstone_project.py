@@ -6,7 +6,7 @@ from airflow.contrib.operators.spark_submit_operator import SparkSubmitOperator
 from airflow.operators.dummy_operator import DummyOperator
 from helpers.udacity.warmup import read_states, read_mode, read_port, \
     read_visa, read_demographics, read_country
-from operators.udacity import StageToS3, DataQualityOperator
+from operators.udacity import StageToS3, DataQualityOperator, JobCheck
 
 """
 CONSTANTS
@@ -66,7 +66,7 @@ stage_states_to_s3 = StageToS3(
     bucket=S3_STATES,
     partition_by=None,
     s3_conn_id=AWS_CONN_ID,
-    path='I94ADDR.csv',
+    path='I94ADDR.json',
     read_func=read_states,
     task_id='Stage_States',
     dag=dag
@@ -76,7 +76,7 @@ stage_countries_to_s3 = StageToS3(
     bucket=S3_COUNTRIES,
     partition_by=None,
     s3_conn_id=AWS_CONN_ID,
-    path='I94CIT_I94RES.csv',
+    path='I94CIT_I94RES.json',
     read_func=read_country,
     task_id='Stage_Countries',
     dag=dag
@@ -86,7 +86,7 @@ stage_modes_to_s3 = StageToS3(
     bucket=S3_MODES,
     partition_by=None,
     s3_conn_id=AWS_CONN_ID,
-    path='I94MODE.csv',
+    path='I94MODE.json',
     read_func=read_mode,
     task_id='Stage_Modes',
     dag=dag
@@ -96,7 +96,7 @@ stage_ports_to_s3 = StageToS3(
     bucket=S3_PORTS,
     partition_by=None,
     s3_conn_id=AWS_CONN_ID,
-    path='I94PORT.csv',
+    path='I94PORT.json',
     read_func=read_port,
     task_id='Stage_Port',
     dag=dag
@@ -106,7 +106,7 @@ stage_visa_to_s3 = StageToS3(
     bucket=S3_VISAS,
     partition_by=None,
     s3_conn_id=AWS_CONN_ID,
-    path='I94VISA.csv',
+    path='I94VISA.json',
     read_func=read_visa,
     task_id='Stage_Visa',
     dag=dag
@@ -116,7 +116,7 @@ stage_demographics_to_s3 = StageToS3(
     bucket=S3_DEMOGRAPHICS,
     partition_by=None,
     s3_conn_id=AWS_CONN_ID,
-    path='us-cities-demographics.csv',
+    path='us-cities-demographics.json',
     read_func=read_demographics,
     task_id='Stage_demographics',
     dag=dag
@@ -162,13 +162,13 @@ spark_job = SparkSubmitOperator(
     dag=dag
 )
 
-run_spark_checks = DataQualityOperator(
-    tests={
-        S3_IMMIGRATIONS: ['len(records) > 0'],
-    },
-    folder=True,
+run_spark_checks = JobCheck(
     bucket=S3_BUCKET_NAME,
     s3_conn_id=AWS_CONN_ID,
+    dimension_bucket=S3_STATES,
+    fact_bucket=S3_IMMIGRATIONS,
+    dimension_id='uid',
+    fact_id='state',
     task_id='Run_spark_data_quality_checks',
     dag=dag
 )

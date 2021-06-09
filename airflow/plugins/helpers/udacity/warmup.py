@@ -11,8 +11,9 @@ def read_aux_table(path: str, value: str) -> pd.DataFrame:
         - read_port
         - read_visa
 
-    It reads a csv file from `path`, adds an `id` column, and changes the `code` column to `uid`, as well as
-    `value` to the column in the parameter `value`
+    It reads a json file from `path`, adds an `id` column, and changes the
+    `code` column to `uid`, as well as `value` to the column in
+    the parameter `value`
 
     Parameters
     ----------
@@ -24,8 +25,9 @@ def read_aux_table(path: str, value: str) -> pd.DataFrame:
     Returns
     -------
     """
-    df = pd.read_csv(
-        path
+    df = pd.read_json(
+        path,
+        orient='records'
     ).reset_index().rename(
         columns={
             'index': 'id',
@@ -101,12 +103,13 @@ def read_visa(path: str) -> pd.DataFrame:
 
 def read_demographics(path: str) -> pd.DataFrame:
     """
-    Reads the demographics dimension table in path. It cleans the column name so that all columns are software
+    Reads the demographics dimension table in path.
+    It cleans the column name so that all columns are software
     friendly names (no spaces, and no caps)
     """
-    df = pd.read_csv(
+    df = pd.read_json(
         path,
-        delimiter=';'
+        orient='records'
     )
 
     df.columns = [
